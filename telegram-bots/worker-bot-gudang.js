@@ -770,6 +770,14 @@ async function handleListTugas(botToken, chatId, threadId, acc, backendUrl, apiK
           });
           return;
         }
+        // DM gagal (belum /start bot ini) -> jangan spam grup, flash instruksi saja
+        await ghostLog(supabaseUrl, supabaseKey, opts.datacenterChatId, botToken, {
+          bot: "gudang", chat_id: chatId, thread_id: threadId,
+          user_id: opts.dmUserId, user_name: opts.userName, nim: acc.nim,
+          command: opts.srcMessageId ? "re_tugas" : "/tugas", detail: "0 tugas aktif, DM gagal (belum /start)", outcome: "dm_fallback"
+        });
+        sendFlash(opts.ctx, botToken, chatId, threadId, `⚠️ *${opts.userName || "Kamu"}*, aku gak bisa kirim DM kamu.\nBuka DM Bot Gudang dulu → tekan *Start* → coba lagi.`);
+        return;
       }
       await sendTelegram(botToken, chatId, emptyText, threadId);
       return;
@@ -877,14 +885,21 @@ async function handleListTugas(botToken, chatId, threadId, acc, backendUrl, apiK
         });
         return;
       }
-      // DM gagal (anggota belum /start bot ini) → fallback: tampil di grup
+      // DM gagal (anggota belum /start bot ini) -> JANGAN dump isi di grup (grup bersih total)
       await ghostLog(supabaseUrl, supabaseKey, opts.datacenterChatId, botToken, {
         bot: "gudang", chat_id: chatId, thread_id: threadId,
         user_id: opts.dmUserId, user_name: opts.userName, nim: acc.nim,
         command: opts.srcMessageId ? "re_tugas" : "/tugas",
-        detail: "DM gagal (belum /start), fallback ke grup", outcome: "dm_fallback"
+        detail: "DM gagal (belum /start) — instruksi start via flash",
+        outcome: "dm_fallback"
       });
+      sendFlash(
+        opts.ctx, botToken, chatId, threadId,
+        `⚠️ *${opts.userName || "Kamu"}*, aku gak bisa kirim DM kamu.\nBuka DM Bot Gudang dulu → tekan *Start* → klik lagi tombolnya.`
+      );
+      return;
     }
+    // Kasus tanpa konteks DM (dipanggil langsung): kirim ke chat seperti biasa
     await sendTelegram(botToken, chatId, out, threadId, replyMarkup);
 
   } catch (err) {
