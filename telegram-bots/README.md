@@ -81,7 +81,8 @@ Setiap Worker di Cloudflare membutuhkan Secrets/Variables berikut:
 | Key | Worker yang Membutuhkan | Keterangan |
 |---|---|---|
 | `BACKEND_URL` | Semua Worker | URL Backend Railway (`https://ubsi-api-production.up.railway.app`) |
-| `BACKEND_API_KEY` | Semua Worker | API Key internal backend (`usrc_secret_2026`) |
+| `BACKEND_API_KEY` | Semua Worker | API Key internal backend (wajib diisi, tanpa fallback — jangan pernah di-commit) |
+| `TELEGRAM_SECRET_TOKEN` | Semua Worker | Secret webhook Telegram. Wajib sama dengan `secret_token` yang dikirim saat `setWebhook`; request tanpa header `X-Telegram-Bot-Api-Secret-Token` yang cocok ditolak 403 |
 | `SUPABASE_URL` | Master, Absen, Stats | URL Supabase USRC |
 | `SUPABASE_SERVICE_ROLE_KEY` | Master, Absen, Stats | Kunci Service Role Supabase untuk akses tabel `ubsi_accounts` |
 | `BOT_TOKEN_MASTER` | Master, Absen, Stats | Token Telegram Bot Master |

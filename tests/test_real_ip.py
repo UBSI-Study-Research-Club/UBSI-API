@@ -12,7 +12,15 @@ def test_extract_client_ip_x_forwarded_for():
     req = MagicMock()
     req.headers = {"x-forwarded-for": "198.51.100.42, 10.0.0.1"}
     req.client.host = "127.0.0.1"
-    assert extract_client_ip(req) == "198.51.100.42"
+    # Entri paling kanan adalah IP asli yang ditambahkan proxy terpercaya
+    assert extract_client_ip(req) == "10.0.0.1"
+
+def test_extract_client_ip_resists_leftmost_spoof():
+    # Klien spoof XFF "1.2.3.4"; proxy menambahkan IP asli di paling kanan
+    req = MagicMock()
+    req.headers = {"x-forwarded-for": "1.2.3.4, 203.0.113.50"}
+    req.client.host = "127.0.0.1"
+    assert extract_client_ip(req) == "203.0.113.50"
 
 def test_extract_client_ip_fallback():
     req = MagicMock()

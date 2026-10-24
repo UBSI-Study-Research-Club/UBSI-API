@@ -13,12 +13,20 @@ export default {
       return new Response('USRC Stats Bot v2.0 Active', { status: 200 });
     }
 
+    // Security (SEC-03): hanya terima webhook asli dari Telegram (setWebhook secret_token).
+    const tgSecret = request.headers.get('x-telegram-bot-api-secret-token');
+    if (!env.TELEGRAM_SECRET_TOKEN || tgSecret !== env.TELEGRAM_SECRET_TOKEN) {
+      return new Response('Unauthorized', { status: 403 });
+    }
+
     try {
       const update = await request.json();
       const botToken = env.BOT_TOKEN_STATS;
       const masterBotToken = env.BOT_TOKEN_MASTER;
       const backendUrl = (env.BACKEND_URL || 'https://ubsi-api-production.up.railway.app').replace(/\/$/, '');
-      const apiKey = env.BACKEND_API_KEY || 'usrc_secret_2026';
+      // Security (SEC-07): tanpa fallback — env kosong wajib fail fast.
+      const apiKey = env.BACKEND_API_KEY;
+      if (!apiKey) throw new Error('BACKEND_API_KEY environment variable is required');
       const supabaseUrl = env.SUPABASE_URL || 'https://wagvbmkimpswiidnenwx.supabase.co';
       const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY;
 

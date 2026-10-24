@@ -168,7 +168,7 @@ async def login(req_body: LoginRequest, request: Request):
         content=success_response(
             data={
                 "nim": nim,
-                "token": token,
+                # Token sengaja TIDAK dikirim di body: cukup via cookie HttpOnly (anti-XSS exfil)
                 "message": "Login berhasil. Session aktif 7 hari (sliding).",
             }
         ),

@@ -190,7 +190,10 @@ async def create_api_key(
                 "elearning_pass": res["elearning_pass"],
             }
         )
-        await client.set(redis_key, cache_data, ex=_REDIS_KEY_TTL)
+        # Enkripsi payload cache —Redis bukan tempat plaintext password (invariant sama
+        # dengan resolve_api_key yang menulis ulang cache dalam bentuk Fernet).
+        encrypted = _get_fernet().encrypt(cache_data.encode("utf-8")).decode("utf-8")
+        await client.set(redis_key, encrypted, ex=_REDIS_KEY_TTL)
     except Exception:
         pass
 

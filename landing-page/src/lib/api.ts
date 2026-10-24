@@ -38,10 +38,6 @@ export async function apiFetch<T>(
   init?: Omit<RequestInit, "body"> & { json?: unknown }
 ): Promise<T> {
   const base = getApiBase();
-  const token =
-    typeof window !== "undefined"
-      ? localStorage.getItem("ubsi_session_token")
-      : null;
   const { json, ...rest } = init ?? {};
   const method = rest.method ?? (json !== undefined ? "POST" : "GET");
   let res: Response;
@@ -54,7 +50,6 @@ export async function apiFetch<T>(
       headers: {
         ...(json !== undefined ? { "Content-Type": "application/json" } : {}),
         ...(method !== "GET" ? { "X-Requested-With": "dashboard" } : {}),
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
         ...rest.headers,
       },
       body: json !== undefined ? JSON.stringify(json) : undefined,

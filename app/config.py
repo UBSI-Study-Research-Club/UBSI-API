@@ -1,12 +1,14 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
-    HOST: str = "0.0.0.0"
-    PORT: int = 8000
+    HOST: str = "127.0.0.1"
+    PORT: int = 8300
     REDIS_URL: str = "redis://127.0.0.1:6379/2"
 
     API_KEY: str = ""
-    ALLOWED_ORIGINS: str = "*"
+    # Default eksplisit (bukan "*"): credentialed cookies + wildcard origin = kombinasi terlarang.
+    # Prod override via env ALLOWED_ORIGINS.
+    ALLOWED_ORIGINS: str = "https://ubsi-api.muaraai.com,http://localhost:3000"
     TRUSTED_PROXIES: str = "127.0.0.1"
     ROOT_PATH: str = ""
 

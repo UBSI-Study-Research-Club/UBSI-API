@@ -948,7 +948,7 @@ async def get_assignments(
         fetch=lambda: pooled_elearning_client.fetch_page(f"/assignment/{token}", nim, password),
         parse=parse_assignments,
         ttl=settings.TTL_ASSIGNMENTS,
-        cache_params={"token": token},
+        cache_params={"nim": nim, "token": token},
     )
 
 @router.get("/presence")
@@ -988,7 +988,7 @@ async def get_presence(
         fetch=_fetch_presence,
         parse=lambda data: data,
         ttl=settings.TTL_ASSIGNMENTS,
-        cache_params={"token": token},
+        cache_params={"nim": nim, "token": token},
     )
 
 @router.get("/materials")
@@ -1011,7 +1011,7 @@ async def get_materials(
         fetch=lambda: pooled_elearning_client.fetch_page(f"/learning/{token}", nim, password),
         parse=parse_materials,
         ttl=settings.TTL_ASSIGNMENTS,
-        cache_params={"token": token},
+        cache_params={"nim": nim, "token": token},
     )
 
 @router.get("/quiz")

@@ -15,11 +15,20 @@ export default {
       return new Response('USRC Master Bot v2.0 Active', { status: 200 });
     }
 
+    // Security (SEC-03): hanya terima webhook asli dari Telegram.
+    // Set secret ini via setWebhook(secret_token) dan env Worker TELEGRAM_SECRET_TOKEN.
+    const tgSecret = request.headers.get('x-telegram-bot-api-secret-token');
+    if (!env.TELEGRAM_SECRET_TOKEN || tgSecret !== env.TELEGRAM_SECRET_TOKEN) {
+      return new Response('Unauthorized', { status: 403 });
+    }
+
     try {
       const update = await request.json();
       const botToken = env.BOT_TOKEN_MASTER;
       const backendUrl = (env.BACKEND_URL || 'https://ubsi-api-production.up.railway.app').replace(/\/$/, '');
-      const apiKey = env.BACKEND_API_KEY || 'usrc_secret_2026';
+      // Security (SEC-07): tanpa fallback — env kosong wajib fail fast, bukan pakai key publik.
+      const apiKey = env.BACKEND_API_KEY;
+      if (!apiKey) throw new Error('BACKEND_API_KEY environment variable is required');
       const supabaseUrl = env.SUPABASE_URL || 'https://wagvbmkimpswiidnenwx.supabase.co';
       const supabaseKey = env.SUPABASE_SERVICE_ROLE_KEY;
 
@@ -294,9 +303,9 @@ export default {
           studentName = tgName || `Mahasiswa (${nim})`;
         }
 
-        // 4. Encrypt passwords securely via backend (Fernet AES)
-        let encMybest = pwMybest;
-        let encSiakad = pwSiakad;
+        // 4. Encrypt passwords securely via backend (Fernet AES) — fail closed (SEC-04)
+        let encMybest = null;
+        let encSiakad = null;
         try {
           const encRes = await fetch(`${backendUrl}/v1/auth/encrypt-account`, {
             method: 'POST',
@@ -317,7 +326,12 @@ export default {
             }
           }
         } catch (e) {
-          // fallback
+          // fail closed: JANGAN pernah simpan plaintext ke Supabase
+        }
+
+        if (!encMybest || !encSiakad) {
+          await sendTelegram(botToken, chatId, "⚠️ Gagal mengamankan kredensial kampus (layanan enkripsi sedang tidak tersedia). Coba lagi beberapa saat.");
+          return new Response('OK', { status: 200 });
         }
 
         // 5. Simpan ke Supabase tabel ubsi_accounts

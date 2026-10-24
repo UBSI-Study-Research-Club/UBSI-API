@@ -37,7 +37,9 @@ def extract_client_ip(request: Request) -> str:
             return cf_ip.strip()
         xff = request.headers.get("x-forwarded-for")
         if xff:
-            return xff.split(",")[0].strip()
+            # Entri paling KANAN adalah IP asli yang ditambahkan proxy terpercaya.
+            # Ambil entri kiri = memercayai header spoof milik klien (rate-limit bypass).
+            return xff.split(",")[-1].strip()
 
     return client_host
 

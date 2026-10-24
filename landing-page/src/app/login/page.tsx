@@ -109,16 +109,15 @@ export default function LoginPage() {
     setSubmitting(true);
     setError(null);
     try {
-      const res = await apiFetch<{ nim: string; token?: string }>("/v1/auth/login", {
+      const res = await apiFetch<{ nim: string }>("/v1/auth/login", {
         json: {
           nim: nim.trim(),
           studentv2_pass: siakadPass,
           elearning_pass: mybestPass,
         },
       });
-      if (res?.token && typeof window !== "undefined") {
-        localStorage.setItem("ubsi_session_token", res.token);
-      }
+      // Token session cukup lewat cookie HttpOnly (credentials: include);
+      // jangan pernah simpan token di localStorage (SEC-05).
       // Prime cache /v1/auth/me seketika agar saat redirect ke /dashboard,
       // useRequireSession() langsung 0ms (authed = true) tanpa tunggu roundtrip network lagi.
       if (res?.nim) {

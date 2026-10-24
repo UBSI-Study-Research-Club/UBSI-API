@@ -401,3 +401,33 @@ async def test_download_assignment_file_ssrf_rejected():
         )
     assert res.status_code == 400
     assert res.json()["error"]["code"] == "INVALID_URL"
+
+
+@pytest.mark.asyncio
+async def test_presence_cache_key_scoped_per_nim(monkeypatch):
+    """SEC-02: dua NIM berbeda dengan course token sama wajib punya cache key berbeda."""
+    monkeypatch.setenv("ELEARNING_NIM", "15260767")
+    monkeypatch.setenv("ELEARNING_PASS", "secret")
+
+    mock_html = (FIXTURES / "el_absen_1.html").read_text(encoding="utf-8")
+    mock_redis = AsyncMock()
+    mock_redis.get.return_value = None
+    mock_redis.incr.return_value = 1
+
+    with patch("redis.asyncio.from_url", return_value=mock_redis), \
+         patch("app.modules.elearning.pooled_elearning_client.fetch_page", return_value=mock_html):
+        async with AsyncClient(transport=ASGITransport(app=app), base_url="http://test") as ac:
+            res_a = await ac.get(
+                "/v1/elearning/presence?token=kursusABC",
+                headers={"X-Elearning-NIM": "15260001", "X-Elearning-Pass": "p1"},
+            )
+            res_b = await ac.get(
+                "/v1/elearning/presence?token=kursusABC",
+                headers={"X-Elearning-NIM": "15260002", "X-Elearning-Pass": "p2"},
+            )
+
+    assert res_a.status_code == 200
+    assert res_b.status_code == 200
+    cache_keys = [str(c.args[0]) for c in mock_redis.set.call_args_list if str(c.args[0]).startswith("ubsi:elearning:")]
+    assert len(cache_keys) >= 2
+    assert len(set(cache_keys)) == len(cache_keys)  # tidak ada dua NIM menulis cache key yang sama

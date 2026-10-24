@@ -76,7 +76,9 @@ async def get_public_stats() -> dict[str, Any]:
         branches: list[dict[str, Any]] = []
         programs: list[dict[str, Any]] = []
         for dimension, output in (("branch", branches), ("program", programs)):
-            keys = await client.keys(f"{_PREFIX}{dimension}:*:*")
+            # SCAN inkremental, non-blocking. KEYS memblokir seluruh keyspace Redis
+            # dan endpoint ini publik (DoS vektor).
+            keys = [key async for key in client.scan_iter(match=f"{_PREFIX}{dimension}:*:*", count=500)]
             grouped: dict[str, set[str]] = {}
             for key in keys:
                 parts = key.split(":")

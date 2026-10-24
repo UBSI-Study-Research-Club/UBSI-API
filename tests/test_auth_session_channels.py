@@ -126,6 +126,20 @@ async def test_login_success_sets_cookie_and_stores_session(fake_redis):
 
 
 @pytest.mark.asyncio
+async def test_login_response_omits_bearer_token(fake_redis):
+    """SEC-05: token session hanya lewat cookie HttpOnly, tidak pernah di body JSON."""
+    transport = ASGITransport(app=app)
+    async with AsyncClient(transport=transport, base_url="http://test") as ac:
+        res = await ac.post(
+            "/v1/auth/login",
+            json={"nim": "15260767", "studentv2_pass": "sv", "elearning_pass": "el"},
+        )
+        assert res.status_code == 200
+        assert "token" not in (res.json().get("data") or {})
+        assert "ubsi_session" in res.cookies
+
+
+@pytest.mark.asyncio
 async def test_login_invalid_credentials_returns_401(monkeypatch):
     monkeypatch.setattr(
         "app.modules.auth.verify_live_credentials",

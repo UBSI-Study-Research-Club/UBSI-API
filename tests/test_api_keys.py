@@ -206,3 +206,29 @@ async def test_api_key_endpoints_async():
         res_me_revoked = await client.get("/v1/auth/me", headers=apikey_headers)
         assert res_me_revoked.status_code == 401
         assert res_me_revoked.json()["error"]["code"] == "UNAUTHORIZED"
+
+
+@pytest.mark.asyncio
+async def test_create_api_key_redis_cache_is_encrypted(monkeypatch):
+    """SEC-01: cache Redis saat create API key wajib Fernet, bukan JSON plaintext."""
+    import json as _json
+
+    from app.api_keys_db import _get_fernet
+
+    fake = FakeRedis()
+
+    async def fake_get_client():
+        return fake
+
+    monkeypatch.setattr("app.cache.cache.get_client", fake_get_client)
+
+    await create_api_key("15260888", "Sec Regression", "sv_secret_plain", "el_secret_plain")
+
+    cached = [v for k, v in fake.kv.items() if k.startswith("ubsi:apikey:")]
+    assert len(cached) == 1
+    blob = cached[0]
+    assert not blob.startswith("{")  # bukan JSON plaintext
+    assert blob.startswith("gAAAAA")  # token Fernet
+    payload = _json.loads(_get_fernet().decrypt(blob.encode("utf-8")).decode("utf-8"))
+    assert payload["studentv2_pass"] == "sv_secret_plain"
+    assert payload["elearning_pass"] == "el_secret_plain"
